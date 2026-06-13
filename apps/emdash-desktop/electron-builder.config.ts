@@ -8,6 +8,7 @@ import {
 } from './src/shared/app-identity.ts';
 
 const config: Configuration = {
+  electronVersion: '40.10.2',
   appId: APP_ID,
   productName: PRODUCT_NAME,
   executableName: PRODUCT_NAME,
@@ -60,7 +61,7 @@ const config: Configuration = {
     target: [
       { target: 'AppImage', arch: ['x64'] },
       { target: 'deb', arch: ['x64'] },
-      { target: 'rpm', arch: ['x64'] },
+      // rpm excluded: rpmbuild not available on this dev machine
     ],
   },
   win: {

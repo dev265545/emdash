@@ -4,6 +4,7 @@ import { PageHeader } from '@renderer/lib/components/page-header';
 import { rpc } from '@renderer/lib/ipc';
 import { cn } from '@renderer/utils/utils';
 import { AccountTab } from './AccountTab';
+import AiGenerationSettingsCard from './AiGenerationSettingsCard';
 import { CliAgentsList } from './CliAgentsList';
 import DefaultAgentSettingsCard from './DefaultAgentSettingsCard';
 import HiddenToolsSettingsCard from './HiddenToolsSettingsCard';
@@ -117,6 +118,7 @@ export function SettingsPage({
       description: 'Manage CLI agents and model configurations.',
       sections: [
         { component: <DefaultAgentSettingsCard /> },
+        { title: 'AI message generation', component: <AiGenerationSettingsCard /> },
         {
           title: 'CLI agents',
           component: (

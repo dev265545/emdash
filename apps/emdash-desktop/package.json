@@ -1,6 +1,6 @@
 {
   "name": "@emdash/emdash-desktop",
-  "version": "1.1.32",
+  "version": "1.1.32-dev",
   "description": "A cross-platform Electron app that orchestrates multiple coding agents in parallel",
   "keywords": [
     "claude",
@@ -20,6 +20,7 @@
   "scripts": {
     "d": "pnpm install && pnpm run dev",
     "dev": "electron-vite dev",
+    "dev:no-sandbox": "electron-vite dev -- --no-sandbox --password-store=gnome-libsecret",
     "dev:debug": "VITE_LOG_LEVEL=debug electron-vite dev",
     "dev:main": "electron-vite dev --watch main",
     "dev:renderer": "electron-vite dev --watch renderer",

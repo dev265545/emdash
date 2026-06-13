@@ -15,6 +15,9 @@ export default defineConfig({
         '@root': resolve('.'),
       },
     },
+    build: {
+      externalizeDeps: { exclude: ['glob'] },
+    },
   },
   preload: {
     root: 'src/preload',
