@@ -29,7 +29,9 @@ import { type SidebarRow } from '@renderer/features/sidebar/sidebar-store';
 import { getTaskStore } from '@renderer/features/tasks/stores/task-selectors';
 import { useParams, useWorkspaceSlots } from '@renderer/lib/layout/navigation-provider';
 import { sidebarStore } from '@renderer/lib/stores/app-state';
+import { SidebarGroupTaskItem } from './group-task-item';
 import { SidebarProjectItem } from './project-item';
+import { SidebarRepoGroupItem } from './repo-group-item';
 import { SidebarTaskItem } from './task-item';
 
 const ROW_HEIGHT = 32;
@@ -172,7 +174,11 @@ export const SidebarVirtualList = observer(function SidebarVirtualList() {
       if (newIdx > oldIdx) newIdx -= 1;
       if (newIdx === oldIdx) return;
       sidebarStore.setProjectOrder(arrayMove(ids, oldIdx, newIdx));
-    } else if (oParsed.kind === 'task' && oParsed.projectId === aParsed.projectId) {
+    } else if (
+      aParsed.kind === 'task' &&
+      oParsed.kind === 'task' &&
+      oParsed.projectId === aParsed.projectId
+    ) {
       const projectId = aParsed.projectId;
       const taskIds = rows
         .filter(
@@ -222,11 +228,31 @@ export const SidebarVirtualList = observer(function SidebarVirtualList() {
                   </SortableRow>
                 );
               }
-              return (
-                <SortableRow key={`${row.projectId}:${row.taskId}`} dndId={dndId} style={vStyle}>
-                  <SidebarTaskItem projectId={row.projectId} taskId={row.taskId} />
-                </SortableRow>
-              );
+              if (row.kind === 'repo-group') {
+                return (
+                  <SortableRow key={`group::${row.repoGroupId}`} dndId={dndId} style={vStyle}>
+                    <SidebarRepoGroupItem repoGroupId={row.repoGroupId} />
+                  </SortableRow>
+                );
+              }
+              if (row.kind === 'repo-group-task') {
+                return (
+                  <div key={`group-task::${row.repoGroupId}::${row.groupTaskId}`} style={vStyle}>
+                    <SidebarGroupTaskItem
+                      repoGroupId={row.repoGroupId}
+                      groupTaskId={row.groupTaskId}
+                    />
+                  </div>
+                );
+              }
+              if (row.kind === 'task') {
+                return (
+                  <SortableRow key={`${row.projectId}:${row.taskId}`} dndId={dndId} style={vStyle}>
+                    <SidebarTaskItem projectId={row.projectId} taskId={row.taskId} />
+                  </SortableRow>
+                );
+              }
+              return null;
             })}
           </div>
         </div>
@@ -241,18 +267,23 @@ export const SidebarVirtualList = observer(function SidebarVirtualList() {
 
 const toProjectDndId = (id: string) => `proj::${id}`;
 const toTaskDndId = (projectId: string, taskId: string) => `task::${projectId}::${taskId}`;
+const toGroupDndId = (id: string) => `group::${id}`;
 
 type SidebarDndId =
   | { kind: 'project'; projectId: string }
-  | { kind: 'task'; projectId: string; taskId: string };
+  | { kind: 'task'; projectId: string; taskId: string }
+  | { kind: 'repo-group'; repoGroupId: string };
 
 function rowToDndId(row: SidebarRow): string {
   if (row.kind === 'project') return toProjectDndId(row.projectId);
+  if (row.kind === 'repo-group') return toGroupDndId(row.repoGroupId);
+  if (row.kind === 'repo-group-task') return `group-task::${row.repoGroupId}::${row.groupTaskId}`;
   return toTaskDndId(row.projectId, row.taskId);
 }
 
 function parseDndId(id: string): SidebarDndId | null {
   if (id.startsWith('proj::')) return { kind: 'project', projectId: id.slice(6) };
+  if (id.startsWith('group::')) return { kind: 'repo-group', repoGroupId: id.slice(7) };
   if (id.startsWith('task::')) {
     const [, projectId, taskId] = id.split('::');
     if (projectId && taskId) return { kind: 'task', projectId, taskId };
@@ -310,6 +341,8 @@ function DragOverlayContent({ dndId }: { dndId: string }) {
       <div className="rounded-lg bg-background-tertiary-2 shadow-md">
         {parsed.kind === 'project' ? (
           <SidebarProjectItem projectId={parsed.projectId} />
+        ) : parsed.kind === 'repo-group' ? (
+          <SidebarRepoGroupItem repoGroupId={parsed.repoGroupId} />
         ) : (
           <SidebarTaskItem projectId={parsed.projectId} taskId={parsed.taskId} />
         )}

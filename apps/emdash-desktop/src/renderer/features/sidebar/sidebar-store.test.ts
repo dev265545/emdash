@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { SidebarStore } from './sidebar-store';
 
 type SidebarProjectManager = ConstructorParameters<typeof SidebarStore>[0];
+type SidebarRepoGroupManager = ConstructorParameters<typeof SidebarStore>[1];
 
 vi.mock('@renderer/lib/ipc', () => ({
   events: {
@@ -20,13 +21,18 @@ function projectManager(projects: { id: string; createdAt: string }[]): SidebarP
   } as unknown as SidebarProjectManager;
 }
 
+function emptyGroupManager(): SidebarRepoGroupManager {
+  return { groups: new Map() } as unknown as SidebarRepoGroupManager;
+}
+
 describe('SidebarStore project ordering', () => {
   it('sorts projects newest first by default', () => {
     const store = new SidebarStore(
       projectManager([
         { id: 'old', createdAt: '2026-01-01T00:00:00.000Z' },
         { id: 'new', createdAt: '2026-01-02T00:00:00.000Z' },
-      ])
+      ]),
+      emptyGroupManager()
     );
 
     expect(store.orderedProjects.map((project) => project.id)).toEqual(['new', 'old']);
@@ -38,7 +44,8 @@ describe('SidebarStore project ordering', () => {
         { id: 'old', createdAt: '2026-01-01T00:00:00.000Z' },
         { id: 'manual', createdAt: '2026-01-02T00:00:00.000Z' },
         { id: 'new', createdAt: '2026-01-03T00:00:00.000Z' },
-      ])
+      ]),
+      emptyGroupManager()
     );
 
     store.setProjectOrder(['manual', 'old']);

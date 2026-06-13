@@ -5,10 +5,12 @@ import type {
   GithubPanelClosePrResult,
   GithubPanelGetCiStatusResult,
   GithubPanelGetCommentsResult,
+  GithubPanelGetCurrentUserResult,
   GithubPanelGetIssuesResult,
   GithubPanelGetPrDetailResult,
   GithubPanelGetPrFilesResult,
   GithubPanelGetPrsResult,
+  GithubPanelMergePrResult,
   GithubPanelSubmitReviewResult,
   ParsedGithubUrl,
   SubmitReviewParams,
@@ -180,6 +182,36 @@ export const githubPanelController = createRPCController({
       );
     } catch (error) {
       log.error('githubPanelController: getPrCiStatus failed', error);
+      return { success: false, error: String(error) };
+    }
+  },
+
+  mergePr: async (params: {
+    owner: string;
+    repo: string;
+    pullNumber: number;
+    accountId?: string;
+  }): Promise<GithubPanelMergePrResult> => {
+    try {
+      return await githubPanelService.mergePr(
+        params.owner,
+        params.repo,
+        params.pullNumber,
+        params.accountId
+      );
+    } catch (error) {
+      log.error('githubPanelController: mergePr failed', error);
+      return { success: false, error: String(error) };
+    }
+  },
+
+  getCurrentUserLogin: async (params: {
+    accountId?: string;
+  }): Promise<GithubPanelGetCurrentUserResult> => {
+    try {
+      return await githubPanelService.getCurrentUserLogin(params.accountId);
+    } catch (error) {
+      log.error('githubPanelController: getCurrentUserLogin failed', error);
       return { success: false, error: String(error) };
     }
   },

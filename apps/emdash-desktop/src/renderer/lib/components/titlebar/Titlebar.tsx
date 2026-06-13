@@ -5,17 +5,11 @@ import { useWorkspaceLayoutContext } from '@renderer/lib/layout/layout-provider'
 import { Button } from '@renderer/lib/ui/button';
 import { BoundShortcut } from '@renderer/lib/ui/shortcut';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/lib/ui/tooltip';
-import { cn } from '@renderer/utils/utils';
 
 export function Titlebar({ leftSlot, rightSlot }: { leftSlot?: ReactNode; rightSlot?: ReactNode }) {
   const { setCollapsed, isLeftOpen } = useWorkspaceLayoutContext();
   return (
-    <header
-      className={cn(
-        'flex h-10 shrink-0 items-center bg-background-secondary pr-2 border-b border-border [-webkit-app-region:drag] dark:bg-background',
-        !isLeftOpen && 'pl-18'
-      )}
-    >
+    <header className="flex h-10 shrink-0 items-center border-b border-border bg-background-secondary pr-2 [-webkit-app-region:drag] dark:bg-background">
       <div className="pointer-events-auto flex w-full items-center gap-1">
         {!isLeftOpen && <div className="[-webkit-app-region:no-drag]"></div>}
         <div className="flex w-full items-center justify-between">

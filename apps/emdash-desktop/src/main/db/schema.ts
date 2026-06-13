@@ -484,6 +484,89 @@ export const appSecrets = sqliteTable(
   })
 );
 
+export const repoGroups = sqliteTable(
+  'repo_groups',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    nameIdx: uniqueIndex('idx_repo_groups_name').on(table.name),
+  })
+);
+
+export const repoGroupMembers = sqliteTable(
+  'repo_group_members',
+  {
+    repoGroupId: text('repo_group_id')
+      .notNull()
+      .references(() => repoGroups.id, { onDelete: 'cascade' }),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    sortOrder: integer('sort_order').notNull().default(0),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.repoGroupId, table.projectId] }),
+    projectIdx: index('idx_repo_group_members_project').on(table.projectId),
+  })
+);
+
+export const groupTasks = sqliteTable(
+  'group_tasks',
+  {
+    id: text('id').primaryKey(),
+    repoGroupId: text('repo_group_id')
+      .notNull()
+      .references(() => repoGroups.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    status: text('status').notNull().default('todo'),
+    archivedAt: text('archived_at'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    workspacePath: text('workspace_path'),
+    agentTaskId: text('agent_task_id').references(() => tasks.id, { onDelete: 'set null' }),
+  },
+  (table) => ({
+    repoGroupIdx: index('idx_group_tasks_repo_group_id').on(table.repoGroupId),
+  })
+);
+
+export type GroupTaskRow = typeof groupTasks.$inferSelect;
+export type GroupTaskInsert = typeof groupTasks.$inferInsert;
+
+export const groupTaskMembers = sqliteTable(
+  'group_task_members',
+  {
+    groupTaskId: text('group_task_id')
+      .notNull()
+      .references(() => groupTasks.id, { onDelete: 'cascade' }),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    taskId: text('task_id').references(() => tasks.id, { onDelete: 'set null' }),
+    sortOrder: integer('sort_order').notNull().default(0),
+    worktreePath: text('worktree_path'),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.groupTaskId, table.projectId] }),
+    taskIdx: index('idx_group_task_members_task_id').on(table.taskId),
+  })
+);
+
+export type GroupTaskMemberRow = typeof groupTaskMembers.$inferSelect;
+export type GroupTaskMemberInsert = typeof groupTaskMembers.$inferInsert;
+
 export type SshConnectionRow = typeof sshConnections.$inferSelect;
 export type SshConnectionInsert = typeof sshConnections.$inferInsert;
 export type ProjectRow = typeof projects.$inferSelect;
@@ -503,3 +586,7 @@ export type AppSecretRow = typeof appSecrets.$inferSelect;
 export type AppSecretInsert = typeof appSecrets.$inferInsert;
 export type WorkspaceRow = typeof workspaces.$inferSelect;
 export type WorkspaceInsert = typeof workspaces.$inferInsert;
+export type RepoGroupRow = typeof repoGroups.$inferSelect;
+export type RepoGroupInsert = typeof repoGroups.$inferInsert;
+export type RepoGroupMemberRow = typeof repoGroupMembers.$inferSelect;
+export type RepoGroupMemberInsert = typeof repoGroupMembers.$inferInsert;

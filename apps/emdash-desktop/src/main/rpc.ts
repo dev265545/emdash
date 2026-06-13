@@ -26,6 +26,7 @@ import { projectController } from './core/projects/controller';
 import { promptLibraryController } from './core/prompt-library/controller';
 import { ptyController } from './core/pty/controller';
 import { pullRequestController } from './core/pull-requests/controller';
+import { repoGroupController } from './core/repo-groups/controller';
 import { repositoryController } from './core/repository/controller';
 import { resourceMonitorController } from './core/resource-monitor/controller';
 import { searchController } from './core/search/controller';
@@ -72,6 +73,7 @@ export const rpcRouter = createRPCRouter({
   skills: skillsController,
   ssh: sshController,
   projects: projectController,
+  repoGroups: repoGroupController,
   tasks: taskController,
   conversations: conversationController,
   terminals: terminalsController,

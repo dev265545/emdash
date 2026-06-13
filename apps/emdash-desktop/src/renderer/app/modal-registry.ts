@@ -5,6 +5,10 @@ import { McpModal } from '@renderer/features/mcp/components/McpModal';
 import { AddProjectModal } from '@renderer/features/projects/components/add-project-modal/add-project-modal';
 import { ProjectConfigImportModal } from '@renderer/features/projects/components/settings-view/project-config-import-modal';
 import { ShareProjectConfigModal } from '@renderer/features/projects/components/settings-view/share-project-config-modal';
+import { CreateGroupTaskModal } from '@renderer/features/repo-groups/components/create-group-task-modal';
+import { CreateRepoGroupModal } from '@renderer/features/repo-groups/components/create-repo-group-modal';
+import { ManageGroupTaskModal } from '@renderer/features/repo-groups/components/manage-group-task-modal';
+import { ManageRepoGroupModal } from '@renderer/features/repo-groups/components/manage-repo-group-modal';
 import { GithubConnectModal } from '@renderer/features/settings/components/github-connect-modal';
 import { CreateSkillModal } from '@renderer/features/skills/components/CreateSkillModal';
 import { AddRemoteModal } from '@renderer/features/tasks/add-remote-modal';
@@ -63,5 +67,9 @@ export const modalRegistry = {
   githubConnectModal: createModal(GithubConnectModal, { size: 'md' }),
   addRemoteModal: createModal(AddRemoteModal),
   deleteTaskModal: createModal(DeleteTaskModal, { size: 'sm' }),
+  createGroupTaskModal: createModal(CreateGroupTaskModal, { size: 'xs' }),
+  createRepoGroupModal: createModal(CreateRepoGroupModal, { size: 'sm' }),
+  manageGroupTaskModal: createModal(ManageGroupTaskModal, { size: 'sm' }),
+  manageRepoGroupModal: createModal(ManageRepoGroupModal, { size: 'sm' }),
   // oxlint-disable-next-line typescript/no-explicit-any
 } satisfies Record<string, ModalRegistryEntry<any, any>>;

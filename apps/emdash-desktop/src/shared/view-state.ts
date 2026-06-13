@@ -127,7 +127,9 @@ export type SidebarTaskSortBy = 'created-at' | 'updated-at';
 /** Persisted sidebar UI state; fields may be absent in older DB blobs. */
 export type SidebarSnapshot = {
   expandedProjectIds?: string[];
+  expandedGroupIds?: string[];
   projectOrder?: string[];
+  groupOrder?: string[];
   taskOrderByProject?: Record<string, string[]>;
   taskSortBy?: SidebarTaskSortBy;
 };

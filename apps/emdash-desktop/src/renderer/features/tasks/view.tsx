@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { useEffect, type ReactNode } from 'react';
 import { type GuardResult, type ViewDefinition } from '@renderer/app/view-registry';
+import { GroupTaskMainPanel } from '@renderer/features/repo-groups/components/group-agent-main-panel';
 import {
   getTaskManagerStore,
   getTaskStore,
@@ -9,7 +10,6 @@ import {
 import { TaskViewWrapper } from '@renderer/features/tasks/task-view-context';
 import { appState } from '@renderer/lib/stores/app-state';
 import { createTaskCommandProvider } from './commands';
-import { TaskMainPanel } from './main-panel';
 import { TaskTitlebar } from './task-titlebar';
 
 const TaskViewWrapperWithProviders = observer(function TaskViewWrapperWithProviders({
@@ -54,7 +54,7 @@ const TaskViewWrapperWithProviders = observer(function TaskViewWrapperWithProvid
 export const taskView = {
   WrapView: TaskViewWrapperWithProviders,
   TitlebarSlot: TaskTitlebar,
-  MainPanel: TaskMainPanel,
+  MainPanel: GroupTaskMainPanel,
   commandProvider: ({ projectId, taskId }: { projectId: string; taskId: string }) =>
     createTaskCommandProvider(projectId, taskId),
   canActivate: (params: unknown): GuardResult => {

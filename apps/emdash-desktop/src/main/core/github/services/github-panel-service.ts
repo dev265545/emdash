@@ -6,10 +6,12 @@ import type {
   GithubPanelClosePrResult,
   GithubPanelGetCiStatusResult,
   GithubPanelGetCommentsResult,
+  GithubPanelGetCurrentUserResult,
   GithubPanelGetIssuesResult,
   GithubPanelGetPrDetailResult,
   GithubPanelGetPrFilesResult,
   GithubPanelGetPrsResult,
+  GithubPanelMergePrResult,
   GithubPanelSubmitReviewResult,
   PanelCheckRun,
   PanelCiStatus,
@@ -336,6 +338,37 @@ export class GithubPanelService {
       return { success: true };
     } catch (error) {
       log.error('GithubPanelService: failed to close PR', error);
+      return { success: false, error: String(error) };
+    }
+  }
+
+  async mergePr(
+    owner: string,
+    repo: string,
+    pullNumber: number,
+    accountId?: string
+  ): Promise<GithubPanelMergePrResult> {
+    try {
+      const octokit = await this._getOctokit(accountId);
+      if (!octokit) return { success: false, error: 'No GitHub account connected' };
+
+      await octokit.rest.pulls.merge({ owner, repo, pull_number: pullNumber });
+      return { success: true };
+    } catch (error) {
+      log.error('GithubPanelService: failed to merge PR', error);
+      return { success: false, error: String(error) };
+    }
+  }
+
+  async getCurrentUserLogin(accountId?: string): Promise<GithubPanelGetCurrentUserResult> {
+    try {
+      const octokit = await this._getOctokit(accountId);
+      if (!octokit) return { success: false, error: 'No GitHub account connected' };
+
+      const { data } = await octokit.rest.users.getAuthenticated();
+      return { success: true, login: data.login };
+    } catch (error) {
+      log.error('GithubPanelService: failed to get current user', error);
       return { success: false, error: String(error) };
     }
   }

@@ -19,9 +19,11 @@ export class PrDetailStore {
   isSubmittingReview = false;
   isAddingComment = false;
   isClosingPr = false;
+  isMergingPr = false;
   reviewError: string | null = null;
   commentError: string | null = null;
   closeError: string | null = null;
+  mergeError: string | null = null;
 
   private _disposeCiReaction: (() => void) | null = null;
 
@@ -208,6 +210,38 @@ export class PrDetailStore {
     } finally {
       runInAction(() => {
         this.isClosingPr = false;
+      });
+    }
+  }
+
+  async mergePr() {
+    runInAction(() => {
+      this.isMergingPr = true;
+      this.mergeError = null;
+    });
+    try {
+      const result = await rpc.githubPanel.mergePr({
+        owner: this.owner,
+        repo: this.repo,
+        pullNumber: this.pullNumber,
+        accountId: this.accountId,
+      });
+      if (!result.success) {
+        runInAction(() => {
+          this.mergeError = result.error;
+        });
+        return false;
+      }
+      this.detail.invalidate();
+      return true;
+    } catch (err) {
+      runInAction(() => {
+        this.mergeError = String(err);
+      });
+      return false;
+    } finally {
+      runInAction(() => {
+        this.isMergingPr = false;
       });
     }
   }

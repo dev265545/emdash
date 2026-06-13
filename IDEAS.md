@@ -503,6 +503,67 @@ Before any PR: `pnpm run format && pnpm run lint && pnpm run typecheck && pnpm r
 
 ---
 
+## Feature 7: Multi-Account Switching — Use Multiple Claude / Codex Accounts Without Friction
+
+### Problem
+Developers often have two Claude subscriptions (personal + work email) or a Claude account
+alongside a Codex/OpenAI account. Right now there's no way to register multiple accounts for
+the same provider and switch between them per-project or on demand — you have to log out,
+log back in, and reconfigure everything.
+
+### What It Does
+- Add multiple accounts per provider (e.g. `claude@personal.com` + `claude@work.com`)
+- Each project can pin a default account; tasks inherit it automatically
+- A quick-switch control in the sidebar or titlebar lets you change the active account
+  for the current project in one click — no re-login required
+- Account credentials are stored separately in Electron safe storage under a keyed slot
+  per account; switching just flips which credential is passed to the PTY env
+- Visual indicator (avatar initials or email chip) shows which account is active at a glance
+
+### Codebase Touchpoints
+
+**Existing infrastructure:**
+- `src/main/core/account/` — existing account management; currently assumes one credential
+  per provider — extend to support a list of named credentials per provider
+- `src/main/core/pty/pty-env.ts` — PTY env passthrough allowlist; the active account's
+  token/credential is injected here — needs to read from the selected account slot
+- `src/renderer/lib/hooks/useGithubAccounts.ts` — pattern to follow for a
+  `useProviderAccounts` hook that exposes the list + active selection
+- `src/main/core/settings/schema.ts` — store the per-project default account id
+- Electron safe storage — already used for secrets; extend with per-account keyed slots
+
+**New code needed:**
+1. `src/main/core/account/multi-account-service.ts` — CRUD for named credential slots
+   per provider: `addAccount(provider, label, credential)`, `removeAccount(id)`,
+   `listAccounts(provider)`, `setActiveAccount(projectId, accountId)`
+2. `src/main/core/account/controller.ts` — new or extended RPC:
+   `listProviderAccounts(provider)`, `addProviderAccount(...)`, `removeProviderAccount(id)`,
+   `setProjectDefaultAccount(projectId, accountId)`
+3. `src/shared/accounts.ts` — `ProviderAccount` type:
+   `{ id, provider, label, email?, createdAt }` (no credential in shared type — stays main-side)
+4. Settings: per-project "Default account" dropdown in project settings UI
+5. `src/renderer/features/account-switcher/` — quick-switch UI component
+   - `AccountSwitcherDropdown.tsx` — lists accounts for the current project's provider,
+     highlights active, one-click to switch
+   - Render in the sidebar footer or titlebar next to the project name
+6. PTY env update: when active account changes, re-read the credential from its safe-storage
+   slot and pass the correct token into the next spawned PTY session
+
+### Implementation Order
+1. `multi-account-service.ts` — credential slot CRUD + safe storage keying
+2. RPC methods + register in `rpc.ts`
+3. Settings UI — add/remove accounts per provider in Settings → Accounts
+4. Per-project default account picker in project settings
+5. `AccountSwitcherDropdown` component in sidebar/titlebar
+6. PTY env wiring — active account credential passed on session spawn
+
+### Complexity: Low–Medium
+Credential storage and PTY env injection already exist. Main work is the per-account
+key scheme in safe storage and the switcher UI. No re-login flow needed — credentials
+are stored once and selected by key.
+
+---
+
 ## Priority Order
 
 | # | Feature | Complexity | Value | Start With |
@@ -512,4 +573,5 @@ Before any PR: `pnpm run format && pnpm run lint && pnpm run typecheck && pnpm r
 | 4 | Auto Setup | Medium | High | Settings + event hook |
 | 1 | AI Commit/PR Msg | Medium | High | Settings schema + service |
 | 6 | LAN Server / Mobile Access | Medium | High | HTTP server + IP resolver |
+| 7 | Multi-Account Switching | Low–Med | High | multi-account-service + safe storage slots |
 | 3 | Multi-Repo Workspaces | High | Very High | DB schema + group CRUD |

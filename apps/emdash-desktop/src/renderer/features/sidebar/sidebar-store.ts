@@ -1,6 +1,7 @@
 import { computed, makeAutoObservable, observable, reaction, runInAction } from 'mobx';
 import { type ProjectStore } from '@renderer/features/projects/stores/project';
 import type { ProjectManagerStore } from '@renderer/features/projects/stores/project-manager';
+import type { RepoGroupManagerStore } from '@renderer/features/repo-groups/stores/repo-group-manager';
 import {
   registeredTaskData,
   unregisteredTaskData,
@@ -35,17 +36,25 @@ export function getSortInstant(task: TaskStore, kind: TaskSortKind): string | un
 
 export type SidebarRow =
   | { kind: 'project'; projectId: string }
-  | { kind: 'task'; projectId: string; taskId: string };
+  | { kind: 'task'; projectId: string; taskId: string }
+  | { kind: 'repo-group'; repoGroupId: string }
+  | { kind: 'repo-group-task'; repoGroupId: string; groupTaskId: string };
 
 export class SidebarStore implements Snapshottable<SidebarSnapshot> {
   projectOrder: string[] = [];
+  groupOrder: string[] = [];
   taskOrderByProject: Record<string, string[]> = {};
   expandedProjectIds = observable.set<string>();
+  expandedGroupIds = observable.set<string>();
   taskSortBy: SidebarTaskSortBy = 'created-at';
 
-  constructor(private readonly projectManager: ProjectManagerStore) {
+  constructor(
+    private readonly projectManager: ProjectManagerStore,
+    private readonly repoGroupManager: RepoGroupManagerStore
+  ) {
     makeAutoObservable(this, {
       expandedProjectIds: false,
+      expandedGroupIds: false,
       sidebarRows: computed,
       pinnedSidebarEntries: computed,
     });
@@ -89,8 +98,56 @@ export class SidebarStore implements Snapshottable<SidebarSnapshot> {
     });
   }
 
+  get orderedGroups() {
+    const all = Array.from(this.repoGroupManager.groups.values());
+    return [...all].sort((a, b) => {
+      const ai = this.groupOrder.indexOf(a.data.id);
+      const bi = this.groupOrder.indexOf(b.data.id);
+      if (ai === -1 && bi === -1) return a.data.createdAt.localeCompare(b.data.createdAt);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+  }
+
+  /**
+   * Agent task IDs that belong to group tasks. These are surfaced under their
+   * workspace (repo-group), so they must be excluded from the owning project's
+   * regular task list to avoid showing the same task in two places.
+   */
+  get groupAgentTaskIds(): Set<string> {
+    const ids = new Set<string>();
+    for (const group of this.repoGroupManager.groups.values()) {
+      for (const task of group.groupTasks.values()) {
+        if (task.agentTaskId) ids.add(task.agentTaskId);
+        // Per-repo diff-only child tasks are surfaced inside the group view, not
+        // the owning project's task list.
+        for (const member of task.data.members) {
+          if (member.taskId) ids.add(member.taskId);
+        }
+      }
+    }
+    return ids;
+  }
+
   get sidebarRows(): SidebarRow[] {
     const rows: SidebarRow[] = [];
+    const groupAgentTaskIds = this.groupAgentTaskIds;
+
+    // Repo groups appear first.
+    for (const group of this.orderedGroups) {
+      const repoGroupId = group.data.id;
+      rows.push({ kind: 'repo-group', repoGroupId });
+      if (this.expandedGroupIds.has(repoGroupId)) {
+        const groupTasks = Array.from(group.groupTasks.values())
+          .filter((t) => !t.isArchived)
+          .sort((a, b) => a.data.createdAt.localeCompare(b.data.createdAt));
+        for (const task of groupTasks) {
+          rows.push({ kind: 'repo-group-task', repoGroupId, groupTaskId: task.data.id });
+        }
+      }
+    }
+
     for (const project of this.orderedProjects) {
       const projectId = project.id;
       rows.push({ kind: 'project', projectId });
@@ -106,6 +163,7 @@ export class SidebarStore implements Snapshottable<SidebarSnapshot> {
           : this.sortTasksForSidebar(tasks);
         for (const task of ordered) {
           if (task.data.isPinned) continue;
+          if (groupAgentTaskIds.has(task.data.id)) continue;
           rows.push({ kind: 'task', projectId, taskId: task.data.id });
         }
       }
@@ -116,6 +174,7 @@ export class SidebarStore implements Snapshottable<SidebarSnapshot> {
   /** Flat list of pinned tasks (all mounted projects), same sort rules as project tree tasks. */
   get pinnedSidebarEntries(): { projectId: string; taskId: string }[] {
     const pairs: { projectId: string; task: TaskStore }[] = [];
+    const groupAgentTaskIds = this.groupAgentTaskIds;
     for (const project of this.projectManager.projects.values()) {
       if (!project.mountedProject) continue;
       const projectId = project.id;
@@ -123,6 +182,7 @@ export class SidebarStore implements Snapshottable<SidebarSnapshot> {
         const visible =
           task.state === 'unregistered' || !('archivedAt' in task.data && task.data.archivedAt);
         if (!visible || !task.data.isPinned) continue;
+        if (groupAgentTaskIds.has(task.data.id)) continue;
         pairs.push({ projectId, task });
       }
     }
@@ -158,7 +218,9 @@ export class SidebarStore implements Snapshottable<SidebarSnapshot> {
   get snapshot(): SidebarSnapshot {
     return {
       expandedProjectIds: [...this.expandedProjectIds],
+      expandedGroupIds: [...this.expandedGroupIds],
       projectOrder: [...this.projectOrder],
+      groupOrder: [...this.groupOrder],
       taskOrderByProject: { ...this.taskOrderByProject },
       taskSortBy: this.taskSortBy,
     };
@@ -168,8 +230,14 @@ export class SidebarStore implements Snapshottable<SidebarSnapshot> {
     if (snapshot.expandedProjectIds !== undefined) {
       this.expandedProjectIds.replace(snapshot.expandedProjectIds);
     }
+    if (snapshot.expandedGroupIds !== undefined) {
+      this.expandedGroupIds.replace(snapshot.expandedGroupIds);
+    }
     if (snapshot.projectOrder !== undefined) {
       this.projectOrder = [...snapshot.projectOrder];
+    }
+    if (snapshot.groupOrder !== undefined) {
+      this.groupOrder = [...snapshot.groupOrder];
     }
     if (snapshot.taskOrderByProject !== undefined) {
       this.taskOrderByProject = { ...snapshot.taskOrderByProject };
@@ -197,6 +265,22 @@ export class SidebarStore implements Snapshottable<SidebarSnapshot> {
 
   ensureProjectExpanded(projectId: string): void {
     this.expandedProjectIds.add(projectId);
+  }
+
+  toggleGroupExpanded(repoGroupId: string): void {
+    if (this.expandedGroupIds.has(repoGroupId)) {
+      this.expandedGroupIds.delete(repoGroupId);
+    } else {
+      this.expandedGroupIds.add(repoGroupId);
+    }
+  }
+
+  ensureGroupExpanded(repoGroupId: string): void {
+    this.expandedGroupIds.add(repoGroupId);
+  }
+
+  setGroupOrder(ids: string[]): void {
+    this.groupOrder = ids;
   }
 
   setTaskSortBy(sortBy: SidebarTaskSortBy): void {

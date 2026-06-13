@@ -1,4 +1,4 @@
-import { FolderPlus, ListFilter } from 'lucide-react';
+import { FolderPlus, Layers, ListFilter } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import { useShowModal } from '@renderer/lib/modal/modal-provider';
 import { sidebarStore } from '@renderer/lib/stores/app-state';
@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/lib/ui/toolti
 
 export const ProjectsGroupLabel = observer(function ProjectsGroupLabel() {
   const showAddProjectModal = useShowModal('addProjectModal');
+  const showCreateRepoGroupModal = useShowModal('createRepoGroupModal');
 
   return (
     <div className="flex h-[40px] items-center justify-between pr-2.5 pl-5">
@@ -67,6 +68,25 @@ export const ProjectsGroupLabel = observer(function ProjectsGroupLabel() {
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                onClick={() => showCreateRepoGroupModal({})}
+                aria-label="New Workspace"
+                className={buttonVariants({
+                  size: 'icon-xs',
+                  variant: 'ghost',
+                  className: 'hover:bg-transparent text-foreground-muted hover:text-foreground',
+                })}
+              >
+                <Layers />
+              </button>
+            }
+          />
+          <TooltipContent>New Workspace</TooltipContent>
+        </Tooltip>
         <Tooltip>
           <TooltipTrigger
             render={

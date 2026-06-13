@@ -16,11 +16,15 @@ const EVENTS: { value: ReviewEvent; label: string; icon: typeof MessageSquare }[
 
 export const ReviewComposer = observer(function ReviewComposer({
   store,
+  isOwnPr = false,
 }: {
   store: PrDetailStore;
+  isOwnPr?: boolean;
 }) {
   const [event, setEvent] = useState<ReviewEvent>('comment');
   const [body, setBody] = useState('');
+
+  const availableEvents = isOwnPr ? EVENTS.filter((e) => e.value === 'comment') : EVENTS;
 
   const handleSubmit = async () => {
     if (!body.trim() || store.isSubmittingReview) return;
@@ -31,7 +35,7 @@ export const ReviewComposer = observer(function ReviewComposer({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex gap-1">
-        {EVENTS.map(({ value, label, icon: Icon }) => (
+        {availableEvents.map(({ value, label, icon: Icon }) => (
           <button
             key={value}
             type="button"
