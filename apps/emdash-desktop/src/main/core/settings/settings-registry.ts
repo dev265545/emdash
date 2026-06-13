@@ -71,6 +71,12 @@ export const SETTINGS_DEFAULTS = {
     staged: 'flat' as const,
     pr: 'flat' as const,
   },
+  aiGeneration: {
+    enabled: true,
+    agentId: 'auto',
+    commitModel: 'auto',
+    prModel: 'auto',
+  },
 } satisfies SettingsDefaultsMap;
 
 export function getDefaultForKey<K extends AppSettingsKey>(key: K): AppSettings[K] {

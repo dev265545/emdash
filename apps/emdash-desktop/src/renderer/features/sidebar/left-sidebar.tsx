@@ -1,6 +1,7 @@
-import { Clock, FolderInput, Library, MessageSquareShare, Settings } from 'lucide-react';
+import { Clock, FolderInput, Github, Library, MessageSquareShare, Settings } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import React from 'react';
+import { githubPanelStore } from '@renderer/features/github-panel/stores/github-panel-store';
 import {
   isCurrentView,
   useNavigate,
@@ -33,6 +34,11 @@ export const LeftSidebar: React.FC = observer(function LeftSidebar() {
 
   const showFeedbackModal = useShowModal('feedbackModal');
   const { isDragOver, onDragOver, onDragEnter, onDragLeave, onDrop } = useSidebarDrop();
+
+  const reviewCount = githubPanelStore.reviewRequests.data?.length ?? 0;
+  const myPrCount = githubPanelStore.myPrs.data?.length ?? 0;
+  const issueCount = githubPanelStore.assignedIssues.data?.length ?? 0;
+  const githubTotal = reviewCount + myPrCount + issueCount;
 
   return (
     <div
@@ -67,6 +73,22 @@ export const LeftSidebar: React.FC = observer(function LeftSidebar() {
         <SidebarFooter>
           <SidebarMenu>
             <SidebarSearchTrigger />
+            <SidebarMenuButton
+              isActive={isCurrentView(currentView, 'githubPanel')}
+              onClick={() => navigate('githubPanel')}
+              aria-label="GitHub"
+              className="w-full justify-between"
+            >
+              <span className="flex items-center gap-2">
+                <Github className="h-5 w-5 sm:h-4 sm:w-4" />
+                GitHub
+              </span>
+              {githubTotal > 0 && (
+                <span className="bg-secondary text-secondary-foreground flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-none font-medium">
+                  {githubTotal > 99 ? '99+' : githubTotal}
+                </span>
+              )}
+            </SidebarMenuButton>
             <SidebarMenuButton
               isActive={isCurrentView(currentView, 'automations')}
               onClick={() => navigate('automations')}

@@ -121,6 +121,13 @@ export const changesViewModeSchema = z.object({
 
 export const browserPreviewSettingsSchema = z.object({ enabled: z.boolean() });
 
+export const aiGenerationSettingsSchema = z.object({
+  enabled: z.boolean().default(true),
+  agentId: z.string().default('auto'),
+  commitModel: z.string().default('auto'),
+  prModel: z.string().default('auto'),
+});
+
 export const resourceMonitorSettingsSchema = z.object({ enabled: z.boolean() });
 
 export const openInSettingsSchema = z.object({
@@ -143,6 +150,7 @@ export const APP_SETTINGS_SCHEMA_MAP = {
   browserPreview: browserPreviewSettingsSchema,
   resourceMonitor: resourceMonitorSettingsSchema,
   changesViewMode: changesViewModeSchema,
+  aiGeneration: aiGenerationSettingsSchema,
 } as const;
 
 export const appSettingsSchema = z.object({
@@ -160,4 +168,5 @@ export const appSettingsSchema = z.object({
   browserPreview: browserPreviewSettingsSchema,
   resourceMonitor: resourceMonitorSettingsSchema,
   changesViewMode: changesViewModeSchema,
+  aiGeneration: aiGenerationSettingsSchema,
 });

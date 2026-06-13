@@ -1,13 +1,22 @@
-import { ChevronDown, CircleAlert, GitBranch, GitPullRequest } from 'lucide-react';
+import {
+  ChevronDown,
+  CircleAlert,
+  GitBranch,
+  GitPullRequest,
+  Loader2,
+  Sparkles,
+} from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import { useMemo, useState } from 'react';
 import { getRepositoryStore } from '@renderer/features/projects/stores/project-selectors';
+import { useAppSettingsKey } from '@renderer/features/settings/use-app-settings-key';
 import { BranchDisplay } from '@renderer/lib/components/branch-display';
 import { ProjectBranchSelector } from '@renderer/lib/components/project-branch-selector';
 import { RemoteSelectContent } from '@renderer/lib/components/remote-select-content';
 import { rpc } from '@renderer/lib/ipc';
 import { type BaseModalProps } from '@renderer/lib/modal/modal-provider';
 import { Alert, AlertDescription, AlertTitle } from '@renderer/lib/ui/alert';
+import { Button } from '@renderer/lib/ui/button';
 import { ComboboxTrigger, ComboboxValue } from '@renderer/lib/ui/combobox';
 import { ConfirmButton } from '@renderer/lib/ui/confirm-button';
 import {
@@ -54,7 +63,9 @@ export const CreatePrModal = observer(function CreatePrModal({
   const [selectedBaseOverride, setSelectedBaseOverride] = useState<Branch | undefined>();
   const [selectedTargetRemoteName, setSelectedTargetRemoteName] = useState<string | undefined>();
   const [isCreating, setIsCreating] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { value: aiGeneration } = useAppSettingsKey('aiGeneration');
   const repo = getRepositoryStore(projectId);
   const defaultBranch = repo?.defaultBranch;
   const isOnRemote = repo?.isBranchOnRemote(branchName) ?? false;
@@ -92,6 +103,36 @@ export const CreatePrModal = observer(function CreatePrModal({
     if (!remoteName) return;
     setSelectedTargetRemoteName(remoteName);
     setSelectedBaseOverride(undefined);
+  };
+
+  const doGenerate = async () => {
+    setIsGenerating(true);
+    setError(null);
+    const result = await rpc.aiGeneration.generatePrDescription(
+      projectId,
+      workspaceId,
+      branchName,
+      selectedBase?.branch
+    );
+    if (result.success) {
+      setTitle(result.data.title);
+      setDescription(result.data.body ?? '');
+    } else {
+      const errorMessages: Record<string, string> = {
+        no_supported_agent: 'No supported agent installed',
+        no_diff: 'No diff found — select a base branch or push some commits first',
+        timeout: 'Generation timed out — try a smaller diff',
+        disabled: 'AI generation is disabled',
+        not_found: 'Workspace not found',
+      };
+      const msg =
+        'type' in result.error
+          ? (errorMessages[result.error.type] ??
+            ('message' in result.error ? result.error.message : 'Generation failed'))
+          : 'Generation failed';
+      setError(msg);
+    }
+    setIsGenerating(false);
   };
 
   const doCreate = async (push: boolean) => {
@@ -147,10 +188,28 @@ export const CreatePrModal = observer(function CreatePrModal({
     }
   };
 
+  const showGenerateButton = aiGeneration?.enabled ?? true;
+
   return (
     <div className="flex max-h-[70vh] flex-col overflow-hidden">
-      <DialogHeader>
+      <DialogHeader className="flex-row items-center justify-between">
         <DialogTitle>{draft ? 'Create Draft PR' : 'Create Pull Request'}</DialogTitle>
+        {showGenerateButton && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-foreground-muted"
+            disabled={isCreating || isGenerating}
+            onClick={() => void doGenerate()}
+          >
+            {isGenerating ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="size-3.5" />
+            )}
+            Generate
+          </Button>
+        )}
       </DialogHeader>
       <DialogContentArea className="space-y-4">
         {!hasGitHubRemote && (

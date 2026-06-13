@@ -1,5 +1,6 @@
 import { createRPCNamespace, createRPCRouter } from '../shared/lib/ipc/rpc';
 import { accountController } from './core/account/controller';
+import { aiGenerationController } from './core/ai-generation/controller';
 import { appController } from './core/app/controller';
 import { asanaController } from './core/asana/controller';
 import { automationsController } from './core/automations/controller';
@@ -12,6 +13,7 @@ import { forgejoController } from './core/forgejo/controller';
 import { filesController } from './core/fs/controller';
 import { gitController } from './core/git/controller';
 import { githubController } from './core/github/controller';
+import { githubPanelController } from './core/github/github-panel-controller';
 import { gitlabController } from './core/gitlab/controller';
 import { issueController } from './core/issues/controller';
 import { jiraController } from './core/jira/controller';
@@ -42,6 +44,7 @@ import { legacyPortController } from './db/legacy-port/controller';
 
 export const rpcRouter = createRPCRouter({
   account: accountController,
+  aiGeneration: aiGenerationController,
   legacyPort: legacyPortController,
   app: appController,
   automations: automationsController,
@@ -56,6 +59,7 @@ export const rpcRouter = createRPCRouter({
   featurebase: featurebaseController,
   forgejo: forgejoController,
   github: githubController,
+  githubPanel: githubPanelController,
   gitlab: gitlabController,
   issues: issueController,
   jira: jiraController,

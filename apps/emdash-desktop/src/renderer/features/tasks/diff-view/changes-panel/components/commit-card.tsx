@@ -1,6 +1,7 @@
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Loader2, Sparkles } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
+import { useAppSettingsKey } from '@renderer/features/settings/use-app-settings-key';
 import { getTaskGitStore } from '@renderer/features/tasks/stores/task-selectors';
 import {
   useTaskViewContext,
@@ -8,10 +9,13 @@ import {
   useWorkspaceId,
   useWorkspaceViewModel,
 } from '@renderer/features/tasks/task-view-context';
+import { rpc } from '@renderer/lib/ipc';
 import { useShowModal } from '@renderer/lib/modal/modal-provider';
+import { Button } from '@renderer/lib/ui/button';
 import { Input } from '@renderer/lib/ui/input';
 import { SplitButton, type SplitButtonAction } from '@renderer/lib/ui/split-button';
 import { Textarea } from '@renderer/lib/ui/textarea';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@renderer/lib/ui/tooltip';
 
 type CommitPhase =
   | 'idle'
@@ -38,6 +42,9 @@ export const CommitCard = observer(function CommitCard({ autoStage = false }: Co
   const [commitMessage, setCommitMessage] = useState('');
   const [description, setDescription] = useState('');
   const [phase, setPhase] = useState<CommitPhase>('idle');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+  const { value: aiGeneration } = useAppSettingsKey('aiGeneration');
   const fullMessage = description ? `${commitMessage}\n\n${description}` : commitMessage;
   const isInFlight = phase !== 'idle';
 
@@ -49,6 +56,32 @@ export const CommitCard = observer(function CommitCard({ autoStage = false }: Co
   const branchName = getTaskGitStore(projectId, taskId)?.branchName;
   const hasOpenPr = taskView.prStore?.pullRequests.some((p) => p.status === 'open') ?? false;
   const canCreatePr = Boolean(repositoryUrl) && Boolean(branchName) && !hasOpenPr;
+
+  const doGenerate = async () => {
+    setIsGenerating(true);
+    setGenerateError(null);
+    const result = await rpc.aiGeneration.generateCommitMessage(projectId, workspaceId);
+    if (result.success) {
+      setCommitMessage(result.data.title);
+      setDescription(result.data.body ?? '');
+    } else {
+      const errorMessages: Record<string, string> = {
+        no_supported_agent: 'No supported agent installed',
+        no_diff: 'Nothing to generate from — stage some changes first',
+        timeout: 'Generation timed out — try a smaller diff',
+        disabled: 'AI generation is disabled',
+        not_found: 'Workspace not found',
+      };
+      const msg =
+        'type' in result.error
+          ? (errorMessages[result.error.type] ??
+            ('message' in result.error ? result.error.message : 'Generation failed'))
+          : 'Generation failed';
+      setGenerateError(msg);
+      setTimeout(() => setGenerateError(null), 4000);
+    }
+    setIsGenerating(false);
+  };
 
   const doCommit = async () => {
     setPhase('committing');
@@ -147,23 +180,53 @@ export const CommitCard = observer(function CommitCard({ autoStage = false }: Co
       ? 'commit-push'
       : diffView.effectiveCommitAction;
 
+  const showGenerateButton = aiGeneration?.enabled ?? true;
+
   return (
     <div className="mx-2 mb-2 flex shrink-0 flex-col items-center justify-between gap-2 rounded-xl border border-border bg-background-1 p-2">
-      <Input
-        placeholder="Commit message"
-        autoFocus
-        className="w-full bg-background"
-        value={commitMessage}
-        onChange={(e) => setCommitMessage(e.target.value)}
-        disabled={isInFlight}
-      />
+      <div className="flex w-full items-center gap-1">
+        <Input
+          placeholder="Commit message"
+          autoFocus
+          className="w-full bg-background"
+          value={commitMessage}
+          onChange={(e) => setCommitMessage(e.target.value)}
+          disabled={isInFlight || isGenerating}
+        />
+        {showGenerateButton && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 px-2"
+                  disabled={isInFlight || isGenerating}
+                  onClick={() => void doGenerate()}
+                  aria-label="Generate commit message with AI"
+                >
+                  {isGenerating ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="size-3.5" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Generate commit message with AI</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
       <Textarea
         placeholder="Description"
         className="w-full bg-background"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        disabled={isInFlight}
+        disabled={isInFlight || isGenerating}
       />
+      {generateError && (
+        <p className="w-full text-xs text-foreground-destructive">{generateError}</p>
+      )}
       {phase === 'idle' && (
         <SplitButton
           actions={actions}
