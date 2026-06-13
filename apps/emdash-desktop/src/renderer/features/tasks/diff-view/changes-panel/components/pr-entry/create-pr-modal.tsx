@@ -108,14 +108,19 @@ export const CreatePrModal = observer(function CreatePrModal({
   const doGenerate = async () => {
     setIsGenerating(true);
     setError(null);
-    const result = await rpc.aiGeneration.generatePrDescription(projectId, workspaceId, branchName);
+    const result = await rpc.aiGeneration.generatePrDescription(
+      projectId,
+      workspaceId,
+      branchName,
+      selectedBase?.branch
+    );
     if (result.success) {
       setTitle(result.data.title);
       setDescription(result.data.body ?? '');
     } else {
       const errorMessages: Record<string, string> = {
         no_supported_agent: 'No supported agent installed',
-        no_diff: 'Nothing to generate from — stage some changes first',
+        no_diff: 'No diff found — select a base branch or push some commits first',
         timeout: 'Generation timed out — try a smaller diff',
         disabled: 'AI generation is disabled',
         not_found: 'Workspace not found',

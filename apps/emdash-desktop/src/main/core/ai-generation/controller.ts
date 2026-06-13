@@ -32,11 +32,21 @@ function runGitDiff(cwd: string, args: string[]): Promise<string> {
   });
 }
 
-async function resolveDiff(workspacePath: string): Promise<string> {
+async function resolveStagedOrUnstagedDiff(workspacePath: string): Promise<string> {
   const staged = await runGitDiff(workspacePath, ['--cached']).catch(() => '');
   if (staged.trim()) return staged;
   const unstaged = await runGitDiff(workspacePath, ['HEAD']).catch(() => '');
   return unstaged;
+}
+
+async function resolvePrDiff(workspacePath: string, baseBranch?: string): Promise<string> {
+  if (baseBranch) {
+    // diff of commits on this branch vs the base (merge-base aware)
+    const branchDiff = await runGitDiff(workspacePath, [`${baseBranch}...HEAD`]).catch(() => '');
+    if (branchDiff.trim()) return branchDiff;
+  }
+  // fallback: staged then unstaged
+  return resolveStagedOrUnstagedDiff(workspacePath);
 }
 
 export const aiGenerationController = createRPCController({
@@ -47,18 +57,23 @@ export const aiGenerationController = createRPCController({
     const workspace = resolveWorkspace(projectId, workspaceId);
     if (!workspace) return err({ type: 'not_found' as const });
 
-    const diff = await resolveDiff(workspace.path).catch(() => '');
+    const diff = await resolveStagedOrUnstagedDiff(workspace.path).catch(() => '');
     return generateCommitMessage(diff, settings);
   },
 
-  generatePrDescription: async (projectId: string, workspaceId: string, branchName: string) => {
+  generatePrDescription: async (
+    projectId: string,
+    workspaceId: string,
+    branchName: string,
+    baseBranch?: string
+  ) => {
     const settings = await appSettingsService.get('aiGeneration');
     if (!settings.enabled) return err({ type: 'disabled' as const });
 
     const workspace = resolveWorkspace(projectId, workspaceId);
     if (!workspace) return err({ type: 'not_found' as const });
 
-    const diff = await resolveDiff(workspace.path).catch(() => '');
+    const diff = await resolvePrDiff(workspace.path, baseBranch).catch(() => '');
     return generatePrDescription(diff, branchName, settings);
   },
 
