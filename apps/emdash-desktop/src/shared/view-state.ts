@@ -30,6 +30,8 @@ export type TabDescriptor =
       commitModifiedSha?: string;
       status?: GitChangeStatus;
       isPreview: boolean;
+      sourceProjectId?: string;
+      sourceTaskId?: string;
     };
 
 export type TabManagerSnapshot = {
@@ -92,6 +94,12 @@ export interface ActiveFile {
   /** Exact commit diff endpoints for comment scoping. Root commits use null original. */
   commitOriginalSha?: string | null;
   commitModifiedSha?: string;
+  /** Set when this diff belongs to a different task/repo than the tab manager
+   *  hosting the tab — e.g. a repo-group member diff opened in the shared
+   *  agent's tab strip. The diff then renders under that task's git context.
+   *  Absent for ordinary single-repo diffs. */
+  sourceProjectId?: string;
+  sourceTaskId?: string;
 }
 
 export type TaskViewSnapshot = {

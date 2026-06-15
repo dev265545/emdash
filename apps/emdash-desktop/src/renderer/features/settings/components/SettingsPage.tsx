@@ -11,6 +11,7 @@ import HiddenToolsSettingsCard from './HiddenToolsSettingsCard';
 import IntegrationsCard from './IntegrationsCard';
 import InterfaceSettingsCard from './InterfaceSettingsCard';
 import KeyboardSettingsCard from './KeyboardSettingsCard';
+import LanServerSettingsCard from './LanServerSettingsCard';
 import NotificationSettingsCard from './NotificationSettingsCard';
 import RepositorySettingsCard from './RepositorySettingsCard';
 import ResourceMonitorSettingsCard from './ResourceMonitorSettingsCard';
@@ -37,6 +38,7 @@ export type SettingsPageTab =
   | 'connections'
   | 'repository'
   | 'interface'
+  | 'mobile'
   | 'docs';
 
 interface SectionConfig {
@@ -68,6 +70,7 @@ export function SettingsPage({
     { id: 'connections', label: 'Connections' },
     { id: 'repository', label: 'Repository' },
     { id: 'interface', label: 'Interface' },
+    { id: 'mobile', label: 'Mobile' },
     { id: 'docs', label: 'Docs', isExternal: true },
   ];
 
@@ -143,6 +146,11 @@ export function SettingsPage({
       title: 'Repository',
       description: 'Configure repository and branch settings.',
       sections: [{ title: 'Branch prefix', component: <RepositorySettingsCard /> }],
+    },
+    mobile: {
+      title: 'Mobile',
+      description: 'Access Emdash from your phone or tablet over your local Wi-Fi network.',
+      sections: [{ component: <LanServerSettingsCard /> }],
     },
     interface: {
       title: 'Interface',

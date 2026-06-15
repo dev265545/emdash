@@ -14,11 +14,12 @@ import { ChangesListOrTree } from './components/changes-list-or-tree';
 import { ChangesViewModeToggle } from './components/changes-view-mode-toggle';
 import { CommitCard } from './components/commit-card';
 import { SectionHeader } from './components/section-header';
+import { useDiffTabTarget } from './diff-tab-target';
 import { useChangesViewMode } from './hooks/use-changes-view-mode';
 import { usePrefetchDiffModels } from './hooks/use-prefetch-diff-models';
 
 export const StagedSection = observer(function StagedSection() {
-  const { projectId } = useTaskViewContext();
+  const { projectId, taskId } = useTaskViewContext();
   const workspaceId = useWorkspaceId();
   const taskView = useWorkspaceViewModel();
   const workspace = useWorkspace();
@@ -26,13 +27,19 @@ export const StagedSection = observer(function StagedSection() {
   const diffView = taskView.diffView;
   const changesView = diffView?.changesView;
 
+  const tabTargetOverride = useDiffTabTarget();
+  const tabManager = tabTargetOverride ?? taskView.tabManager;
+  const diffSource = tabTargetOverride
+    ? { sourceProjectId: projectId, sourceTaskId: taskId }
+    : undefined;
+
   const changes = git.stagedFileChanges;
   const hasChanges = changes.length > 0;
 
   const activePath =
-    taskView.tabManager.activeDescriptor?.kind === 'diff' &&
-    taskView.tabManager.activeDescriptor.diffGroup === 'staged'
-      ? taskView.tabManager.activeDescriptor.path
+    tabManager.activeDescriptor?.kind === 'diff' &&
+    tabManager.activeDescriptor.diffGroup === 'staged'
+      ? tabManager.activeDescriptor.path
       : undefined;
 
   const prefetch = usePrefetchDiffModels(projectId, workspaceId, 'staged', HEAD_REF);
@@ -42,24 +49,26 @@ export const StagedSection = observer(function StagedSection() {
   if (!diffView || !changesView) return null;
 
   const handleSelectChange = (change: GitChange) => {
-    taskView.tabManager.openDiffPreview(
+    tabManager.openDiffPreview(
       {
         path: change.path,
         type: 'git',
         group: 'staged',
         originalRef: commitRef('HEAD'),
+        ...diffSource,
       },
       change.status
     );
   };
 
   const handleDoubleClickChange = (change: GitChange) => {
-    taskView.tabManager.openDiff(
+    tabManager.openDiff(
       {
         path: change.path,
         type: 'git',
         group: 'staged',
         originalRef: commitRef('HEAD'),
+        ...diffSource,
       },
       change.status
     );

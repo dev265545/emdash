@@ -1,3 +1,4 @@
+import { lanServerService } from '@main/core/lan-server/lan-server-service';
 import { reconcileResourceSampler } from '@main/core/resource-monitor/resource-sampler';
 import { createRPCController } from '@shared/lib/ipc/rpc';
 import { appSettingsService, type AppSettings, type AppSettingsKey } from './settings-service';
@@ -18,6 +19,7 @@ export const appSettingsController = createRPCController({
   update: async <T extends AppSettingsKey>(key: T, value: AppSettings[T]): Promise<void> => {
     await appSettingsService.update(key, value);
     if (key === 'resourceMonitor') await reconcileResourceSampler();
+    if (key === 'lanServer') await lanServerService.reconcile();
   },
 
   reset: async <T extends AppSettingsKey>(key: T): Promise<void> => {

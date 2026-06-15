@@ -130,6 +130,14 @@ export const aiGenerationSettingsSchema = z.object({
 
 export const resourceMonitorSettingsSchema = z.object({ enabled: z.boolean() });
 
+export const lanServerSettingsSchema = z.object({
+  enabled: z.boolean().default(false),
+  port: z.number().min(1024).max(65535).default(7788),
+  pin: z.string().default(''),
+  writeMode: z.boolean().default(false),
+  autoStartOnLaunch: z.boolean().default(false),
+});
+
 export const openInSettingsSchema = z.object({
   default: openInAppIdSchema,
   hidden: z.array(openInAppIdSchema),
@@ -151,6 +159,7 @@ export const APP_SETTINGS_SCHEMA_MAP = {
   resourceMonitor: resourceMonitorSettingsSchema,
   changesViewMode: changesViewModeSchema,
   aiGeneration: aiGenerationSettingsSchema,
+  lanServer: lanServerSettingsSchema,
 } as const;
 
 export const appSettingsSchema = z.object({
@@ -169,4 +178,5 @@ export const appSettingsSchema = z.object({
   resourceMonitor: resourceMonitorSettingsSchema,
   changesViewMode: changesViewModeSchema,
   aiGeneration: aiGenerationSettingsSchema,
+  lanServer: lanServerSettingsSchema,
 });

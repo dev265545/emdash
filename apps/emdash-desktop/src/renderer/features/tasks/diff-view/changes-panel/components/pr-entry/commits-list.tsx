@@ -18,6 +18,7 @@ import {
   type GitChange,
   type GitObjectRef,
 } from '@shared/core/git/git';
+import { useDiffTabTarget } from '../../diff-tab-target';
 import { ChangesListItem } from '../changes-list-item';
 import { useCommitFiles } from './use-commit-files';
 import { usePrCommits } from './use-pr-commits';
@@ -181,9 +182,14 @@ const refsMatch = (left: GitObjectRef | undefined, right: GitObjectRef): boolean
   left !== undefined && refsEqual(left, right);
 
 const CommitFilesList = observer(function CommitFilesList({ commit }: { commit: Commit }) {
-  const { projectId } = useTaskViewContext();
+  const { projectId, taskId } = useTaskViewContext();
   const workspaceId = useWorkspaceId();
   const taskView = useWorkspaceViewModel();
+  const tabTargetOverride = useDiffTabTarget();
+  const tabManager = tabTargetOverride ?? taskView.tabManager;
+  const diffSource = tabTargetOverride
+    ? { sourceProjectId: projectId, sourceTaskId: taskId }
+    : undefined;
   const originalRef = useMemo(() => parentRefForCommit(commit), [commit]);
   const modifiedRef = useMemo(() => commitRefForCommit(commit), [commit]);
   const originalSha = useMemo(() => parentShaForCommit(commit), [commit]);
@@ -197,15 +203,15 @@ const CommitFilesList = observer(function CommitFilesList({ commit }: { commit: 
   );
 
   const activePath =
-    taskView.tabManager.activeDescriptor?.kind === 'diff' &&
-    taskView.tabManager.activeDescriptor.diffGroup === 'git' &&
-    refsEqual(taskView.tabManager.activeDescriptor.originalRef, originalRef) &&
-    refsMatch(taskView.tabManager.activeDescriptor.modifiedRef, modifiedRef)
-      ? taskView.tabManager.activeDescriptor.path
+    tabManager.activeDescriptor?.kind === 'diff' &&
+    tabManager.activeDescriptor.diffGroup === 'git' &&
+    refsEqual(tabManager.activeDescriptor.originalRef, originalRef) &&
+    refsMatch(tabManager.activeDescriptor.modifiedRef, modifiedRef)
+      ? tabManager.activeDescriptor.path
       : undefined;
 
   const openPreview = (change: GitChange) => {
-    taskView.tabManager.openDiffPreview(
+    tabManager.openDiffPreview(
       {
         path: change.path,
         type: 'git',
@@ -214,13 +220,14 @@ const CommitFilesList = observer(function CommitFilesList({ commit }: { commit: 
         modifiedRef,
         commitOriginalSha: originalSha,
         commitModifiedSha: commit.hash,
+        ...diffSource,
       },
       change.status
     );
   };
 
   const openDiff = (change: GitChange) => {
-    taskView.tabManager.openDiff(
+    tabManager.openDiff(
       {
         path: change.path,
         type: 'git',
@@ -229,6 +236,7 @@ const CommitFilesList = observer(function CommitFilesList({ commit }: { commit: 
         modifiedRef,
         commitOriginalSha: originalSha,
         commitModifiedSha: commit.hash,
+        ...diffSource,
       },
       change.status
     );

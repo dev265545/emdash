@@ -24,6 +24,10 @@ export class DiffTabStore {
   commitOriginalSha: string | null | undefined;
   commitModifiedSha: string | undefined;
   status: GitChangeStatus | undefined;
+  /** When set, this diff renders under a different task/repo's git context
+   *  (e.g. a repo-group member diff hosted in the shared agent's tab strip). */
+  readonly sourceProjectId: string | undefined;
+  readonly sourceTaskId: string | undefined;
 
   constructor(
     activeFile: ActiveFile,
@@ -44,6 +48,8 @@ export class DiffTabStore {
     this.commitOriginalSha = activeFile.commitOriginalSha;
     this.commitModifiedSha = activeFile.commitModifiedSha;
     this.status = status;
+    this.sourceProjectId = activeFile.sourceProjectId;
+    this.sourceTaskId = activeFile.sourceTaskId;
 
     makeObservable(this, {
       isPreview: observable,

@@ -5,6 +5,7 @@ import { ShowHide } from '@renderer/lib/ui/show-hide';
 import { ConversationsPanel } from '../conversations/conversations-panel';
 import { DiffView } from '../diff-view/main-panel/diff-view';
 import { useTabGroupContext } from '../tabs/tab-group-context';
+import { TaskViewWrapper } from '../task-view-context';
 import { PaneEmptyState } from './pane-empty-state';
 import { resolvePaneRenderer } from './pane-renderer';
 import { FileRenderer } from './renderers/file-renderer';
@@ -35,7 +36,20 @@ export const PaneContent = observer(function PaneContent() {
         </ShowHide>
         {paneRenderer.kind === 'browser' && <BrowserPane browserId={paneRenderer.browserId} />}
         {paneRenderer.kind === 'file' && <FileRenderer tab={paneRenderer.tab} />}
-        {paneRenderer.kind === 'file-diff' && <DiffView tab={paneRenderer.tab} />}
+        {paneRenderer.kind === 'file-diff' &&
+          (paneRenderer.tab.sourceProjectId && paneRenderer.tab.sourceTaskId ? (
+            // Repo-group member diff hosted in the shared agent's tab strip:
+            // render it under the member task's context so its git/workspace
+            // resolves to that repo instead of the agent's.
+            <TaskViewWrapper
+              projectId={paneRenderer.tab.sourceProjectId}
+              taskId={paneRenderer.tab.sourceTaskId}
+            >
+              <DiffView tab={paneRenderer.tab} />
+            </TaskViewWrapper>
+          ) : (
+            <DiffView tab={paneRenderer.tab} />
+          ))}
       </div>
     </div>
   );

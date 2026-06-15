@@ -54,6 +54,20 @@ export function usePanelLayout(
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const appliedExpanded = useRef<ExpandedSections | null>(null);
+  const [containerHeight, setContainerHeight] = useState(0);
+
+  // Track the container height so the layout effect below can re-run once the
+  // panel gains height. Without this, mounting at 0 height (e.g. inside a tab
+  // that lays out after first paint) makes the effect bail permanently and the
+  // collapsed/expanded section sizes never apply.
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    setContainerHeight(el.offsetHeight);
+    const observer = new ResizeObserver(() => setContainerHeight(el.offsetHeight));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   useLayoutEffect(() => {
     if (!isVisible || appliedExpanded.current === expanded) return;
@@ -78,7 +92,7 @@ export function usePanelLayout(
         ref.current?.collapse();
       }
     });
-  }, [expanded, isVisible, unstagedRef, stagedRef, prRef, spacerRef]);
+  }, [expanded, isVisible, containerHeight, unstagedRef, stagedRef, prRef, spacerRef]);
 
   return {
     expanded,

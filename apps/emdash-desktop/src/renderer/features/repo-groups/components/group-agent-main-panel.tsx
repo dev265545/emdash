@@ -1,4 +1,4 @@
-import { Loader2, MessageSquare } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import { useEffect, useState, type ReactNode } from 'react';
 import { getProjectStore } from '@renderer/features/projects/stores/project-selectors';
@@ -7,92 +7,118 @@ import {
   getRepoGroupStore,
 } from '@renderer/features/repo-groups/stores/repo-group-selectors';
 import { ChangesPanel } from '@renderer/features/tasks/diff-view/changes-panel/changes-panel';
+import { DiffTabTargetContext } from '@renderer/features/tasks/diff-view/changes-panel/diff-tab-target';
 import { TaskMainPanel } from '@renderer/features/tasks/main-panel';
 import {
   getTaskManagerStore,
   getTaskStore,
+  getWorkspaceViewModel,
   taskViewKind,
 } from '@renderer/features/tasks/stores/task-selectors';
-import { TaskViewWrapper, useTaskViewContext } from '@renderer/features/tasks/task-view-context';
+import {
+  TaskViewWrapper,
+  useTaskViewContext,
+  useWorkspaceViewModel,
+} from '@renderer/features/tasks/task-view-context';
 import {
   DraggableResizeHandle,
   TaskMainColumn,
 } from '@renderer/features/tasks/view/task-main-column';
-import { TaskSidebar } from '@renderer/features/tasks/view/task-sidebar';
 import { ResizablePanel, ResizablePanelGroup } from '@renderer/lib/ui/resizable';
 import { cn } from '@renderer/utils/utils';
-
-const AGENT_TAB = 'agent';
 
 type Member = { projectId: string; worktreePath: string | null; taskId: string };
 
 /**
  * Main panel for a group task's shared agent, modelled on VS Code multi-root
- * source control. The center shows the active context's main column (the agent
- * conversation, or a repo's diff viewer); the right panel has a repo tab strip
- * — [ Agent | repo1 | repo2 … ] — and the selected repo's real ChangesPanel.
- * Clicking a changed file opens its diff in the center, reusing the standard
- * single-repo components per repo. Pass-through to TaskMainPanel for non-group
- * tasks.
+ * source control. The center is the agent task's own TaskMainColumn at all
+ * times — so the agent conversation, terminal, and tab strip are never torn
+ * down. Opening a changed file from any repo's sidebar ChangesPanel adds a diff
+ * tab to that SAME agent tab strip (via DiffTabTargetContext), and PaneContent
+ * renders each such diff under its source repo's git context. The right panel
+ * is a repo tab strip — [ repo1 | repo2 … ] — showing the selected repo's real
+ * ChangesPanel. Pass-through to TaskMainPanel for non-group tasks.
  */
 export const GroupTaskMainPanel = observer(function GroupTaskMainPanel() {
-  const { taskId } = useTaskViewContext();
+  const { projectId, taskId } = useTaskViewContext();
+  const kind = taskViewKind(getTaskStore(projectId, taskId), projectId);
   const groupContext = getGroupContextForAgentTask(taskId);
   const group = groupContext ? getRepoGroupStore(groupContext.repoGroupId) : undefined;
   const groupTask = group?.groupTasks.get(groupContext?.groupTaskId ?? '');
   const members = (groupTask?.data.members ?? []).filter((m): m is Member => !!m.taskId);
 
-  const [activeTab, setActiveTab] = useState<string>(AGENT_TAB);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
 
   if (!groupContext || members.length === 0) {
     return <TaskMainPanel />;
   }
 
-  const activeMember = members.find((m) => m.taskId === activeTab) ?? null;
+  // The center mounts TaskMainColumn (and its TerminalsPanel) against the agent
+  // task's workspace, which only exists once provisioned. Defer to
+  // TaskMainPanel's loader/error states until ready — otherwise useWorkspaceId()
+  // throws "task has no workspace" mid-provision.
+  if (kind !== 'ready') {
+    return <TaskMainPanel />;
+  }
+
+  const activeMember = members.find((m) => m.taskId === activeTab) ?? members[0];
+  if (!activeMember) {
+    return <TaskMainPanel />;
+  }
+
+  // Repo diffs open into the agent's tab strip, not the member's hidden one.
+  const agentTabManager = getWorkspaceViewModel(projectId, taskId)?.tabManager ?? null;
 
   return (
     <ResizablePanelGroup orientation="horizontal" id="group-task-layout">
       <ResizablePanel id="group-task-center">
-        {activeMember ? (
-          <MemberRegion projectId={activeMember.projectId} taskId={activeMember.taskId}>
-            <TaskMainColumn />
-          </MemberRegion>
-        ) : (
-          <TaskMainColumn />
-        )}
+        <TaskMainColumn />
       </ResizablePanel>
       <DraggableResizeHandle />
       <ResizablePanel id="group-task-sidebar" defaultSize="28%" minSize="280px" maxSize="55%">
         <div className="flex h-full min-h-0 flex-col">
           <div className="flex items-center gap-1 overflow-x-auto border-b px-2 py-1">
-            <TabButton
-              active={activeTab === AGENT_TAB}
-              onClick={() => setActiveTab(AGENT_TAB)}
-              icon={<MessageSquare className="h-3.5 w-3.5" />}
-              label="Agent"
-            />
             {members.map((m) => (
               <TabButton
                 key={m.taskId}
-                active={activeTab === m.taskId}
+                active={activeMember.taskId === m.taskId}
                 onClick={() => setActiveTab(m.taskId)}
                 label={getProjectStore(m.projectId)?.name ?? m.projectId}
               />
             ))}
           </div>
           <div className="min-h-0 flex-1">
-            {activeMember ? (
-              <MemberRegion projectId={activeMember.projectId} taskId={activeMember.taskId}>
-                <ChangesPanel />
+            <DiffTabTargetContext.Provider value={agentTabManager}>
+              <MemberRegion
+                key={activeMember.taskId}
+                projectId={activeMember.projectId}
+                taskId={activeMember.taskId}
+              >
+                <RepoChangesPanel />
               </MemberRegion>
-            ) : (
-              <TaskSidebar />
-            )}
+            </DiffTabTargetContext.Provider>
           </div>
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>
   );
+});
+
+/**
+ * The member repo's ChangesPanel. usePanelLayout only applies its
+ * collapsed/expanded section sizing when the task view reports the changes
+ * panel as visible, so force this diff-only member into that state (it has no
+ * other sidebar surface).
+ */
+const RepoChangesPanel = observer(function RepoChangesPanel() {
+  const taskView = useWorkspaceViewModel();
+
+  useEffect(() => {
+    taskView.setSidebarTab('changes');
+    taskView.setSidebarCollapsed(false);
+  }, [taskView]);
+
+  return <ChangesPanel />;
 });
 
 function TabButton({

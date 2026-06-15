@@ -17,6 +17,7 @@ import { githubPanelController } from './core/github/github-panel-controller';
 import { gitlabController } from './core/gitlab/controller';
 import { issueController } from './core/issues/controller';
 import { jiraController } from './core/jira/controller';
+import { lanServerController } from './core/lan-server/controller';
 import { linearController } from './core/linear/controller';
 import { mcpController } from './core/mcp/controller';
 import { mondayController } from './core/monday/controller';
@@ -45,6 +46,7 @@ import { legacyPortController } from './db/legacy-port/controller';
 
 export const rpcRouter = createRPCRouter({
   account: accountController,
+  lanServer: lanServerController,
   aiGeneration: aiGenerationController,
   legacyPort: legacyPortController,
   app: appController,

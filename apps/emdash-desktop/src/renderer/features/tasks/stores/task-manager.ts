@@ -198,10 +198,9 @@ export class TaskManagerStore {
     );
 
     this._unsubPrUpdated = events.on(prUpdatedChannel, ({ prs }) => {
-      const repoUrl = this._repository.pullRequestRepositoryUrl;
-      if (!repoUrl) return;
+      // Match by branch name across any repo — not filtered to the project's primary
+      // remote so multi-repo workspaces receive live updates from any tracked remote.
       for (const pr of prs) {
-        if (pr.repositoryUrl !== repoUrl) continue;
         for (const [, store] of this.tasks) {
           if (!isRegistered(store)) continue;
           const task = store.data as Task;
@@ -221,8 +220,8 @@ export class TaskManagerStore {
 
     this._unsubPrSyncProgress = events.on(prSyncProgressChannel, (progress) => {
       if (progress.status !== 'done') return;
-      const repoUrl = this._repository.pullRequestRepositoryUrl;
-      if (!repoUrl || progress.remoteUrl !== repoUrl) return;
+      // Reload for any sync completion — server queries all project remotes so
+      // multi-repo workspaces pick up PRs from non-primary repos.
       for (const [, store] of this.tasks) {
         if (isRegistered(store)) {
           void this._reloadPrsForTask(store);
@@ -255,7 +254,11 @@ export class TaskManagerStore {
     if (!isRegistered(store)) return;
     const result = await rpc.pullRequests.getPullRequestsForTask(this.projectId, store.data.id);
     if (!result.success) return;
-    const prs = result.data.prs;
+    const { prs, branchName } = result.data;
+    // branchName === null means the workspace branch cache is not populated yet.
+    // An empty result here is inconclusive — skip the update to avoid wiping PRs
+    // that were added via prUpdatedChannel while the cache is still warming up.
+    if (branchName === null) return;
     runInAction(() => {
       if (isRegistered(store)) {
         (store.data as Task).prs = prs;
