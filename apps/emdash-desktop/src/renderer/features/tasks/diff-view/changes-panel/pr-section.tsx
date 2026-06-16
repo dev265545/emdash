@@ -1,5 +1,6 @@
 import { Plus, RefreshCw } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
+import { githubPanelStore } from '@renderer/features/github-panel/stores/github-panel-store';
 import { getPrSyncStore } from '@renderer/features/projects/stores/project-selectors';
 import { useToast } from '@renderer/lib/hooks/use-toast';
 import { rpc } from '@renderer/lib/ipc';
@@ -57,7 +58,7 @@ export const PullRequestsSection = observer(function PullRequestsSection({
             branchName: taskBranch,
             draft: false,
             workspaceId,
-            onSuccess: () => {},
+            onSuccess: () => githubPanelStore.myPrs.invalidate(),
           })
       : undefined;
 
@@ -71,7 +72,7 @@ export const PullRequestsSection = observer(function PullRequestsSection({
             branchName: taskBranch,
             draft: true,
             workspaceId,
-            onSuccess: () => {},
+            onSuccess: () => githubPanelStore.myPrs.invalidate(),
           })
       : undefined;
 

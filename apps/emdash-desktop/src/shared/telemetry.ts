@@ -14,7 +14,8 @@ export type FocusView =
   | 'skills'
   | 'mcp'
   | 'automations'
-  | 'githubPanel';
+  | 'githubPanel'
+  | 'repoGroup';
 export type FocusMainPanel = 'agents' | 'editor' | 'diff' | 'browser';
 export type FocusedRegion = 'main' | 'bottom';
 
@@ -59,6 +60,7 @@ export type TelemetryEventProperties = {
   mcp_viewed: { from_view: FocusView | null };
   automations_viewed: { from_view: FocusView | null };
   github_panel_viewed: { from_view: FocusView | null };
+  repo_group_viewed: { from_view: FocusView | null };
 
   project_added: { type: 'local' | 'ssh'; strategy: 'open' | 'create' | 'clone'; success: boolean };
   project_deleted: EmptyProps;

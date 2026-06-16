@@ -7,15 +7,22 @@ import {
 } from '@renderer/features/tasks/task-view-context';
 import { commitRef, refsEqual, type GitChange } from '@shared/core/git/git';
 import { getPrNumber, type PullRequest } from '@shared/core/pull-requests/pull-requests';
+import { useDiffTabTarget } from '../../diff-tab-target';
 import { useChangesViewMode } from '../../hooks/use-changes-view-mode';
 import { ChangesListOrTree } from '../changes-list-or-tree';
 
 export const PrFilesList = observer(function PrFilesList({ pr }: { pr: PullRequest }) {
-  const { projectId } = useTaskViewContext();
+  const { projectId, taskId } = useTaskViewContext();
   const workspaceId = useWorkspaceId();
   const taskView = useWorkspaceViewModel();
   const prStore = taskView.prStore!;
   const { mode: viewMode } = useChangesViewMode('pr');
+
+  const tabTargetOverride = useDiffTabTarget();
+  const tabManager = tabTargetOverride ?? taskView.tabManager;
+  const diffSource = tabTargetOverride
+    ? { sourceProjectId: projectId, sourceTaskId: taskId }
+    : undefined;
 
   const prNumber = getPrNumber(pr) ?? undefined;
   const baseRef = commitRef(pr.baseRefOid);
@@ -25,16 +32,16 @@ export const PrFilesList = observer(function PrFilesList({ pr }: { pr: PullReque
   const prefetchPrDiff = usePrefetchDiffModels(projectId, workspaceId, 'pr', baseRef, modifiedRef);
 
   const activePath =
-    taskView.tabManager.activeDescriptor?.kind === 'diff' &&
-    taskView.tabManager.activeDescriptor.diffGroup === 'pr' &&
-    taskView.tabManager.activeDescriptor.prNumber === prNumber &&
-    refsEqual(taskView.tabManager.activeDescriptor.originalRef, baseRef) &&
-    refsEqual(taskView.tabManager.activeDescriptor.modifiedRef ?? modifiedRef, modifiedRef)
-      ? taskView.tabManager.activeDescriptor.path
+    tabManager.activeDescriptor?.kind === 'diff' &&
+    tabManager.activeDescriptor.diffGroup === 'pr' &&
+    tabManager.activeDescriptor.prNumber === prNumber &&
+    refsEqual(tabManager.activeDescriptor.originalRef, baseRef) &&
+    refsEqual(tabManager.activeDescriptor.modifiedRef ?? modifiedRef, modifiedRef)
+      ? tabManager.activeDescriptor.path
       : undefined;
 
   const handleSelectChange = (change: GitChange) => {
-    taskView.tabManager.openDiffPreview(
+    tabManager.openDiffPreview(
       {
         path: change.path,
         type: 'git',
@@ -44,13 +51,14 @@ export const PrFilesList = observer(function PrFilesList({ pr }: { pr: PullReque
         prNumber,
         prBaseOid: pr.baseRefOid,
         prHeadOid: pr.headRefOid,
+        ...diffSource,
       },
       change.status
     );
   };
 
   const handleDoubleClickChange = (change: GitChange) => {
-    taskView.tabManager.openDiff(
+    tabManager.openDiff(
       {
         path: change.path,
         type: 'git',
@@ -60,6 +68,7 @@ export const PrFilesList = observer(function PrFilesList({ pr }: { pr: PullReque
         prNumber,
         prBaseOid: pr.baseRefOid,
         prHeadOid: pr.headRefOid,
+        ...diffSource,
       },
       change.status
     );

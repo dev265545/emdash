@@ -17,6 +17,7 @@ import { githubPanelController } from './core/github/github-panel-controller';
 import { gitlabController } from './core/gitlab/controller';
 import { issueController } from './core/issues/controller';
 import { jiraController } from './core/jira/controller';
+import { lanServerController } from './core/lan-server/controller';
 import { linearController } from './core/linear/controller';
 import { mcpController } from './core/mcp/controller';
 import { mondayController } from './core/monday/controller';
@@ -26,6 +27,7 @@ import { projectController } from './core/projects/controller';
 import { promptLibraryController } from './core/prompt-library/controller';
 import { ptyController } from './core/pty/controller';
 import { pullRequestController } from './core/pull-requests/controller';
+import { repoGroupController } from './core/repo-groups/controller';
 import { repositoryController } from './core/repository/controller';
 import { resourceMonitorController } from './core/resource-monitor/controller';
 import { searchController } from './core/search/controller';
@@ -44,6 +46,7 @@ import { legacyPortController } from './db/legacy-port/controller';
 
 export const rpcRouter = createRPCRouter({
   account: accountController,
+  lanServer: lanServerController,
   aiGeneration: aiGenerationController,
   legacyPort: legacyPortController,
   app: appController,
@@ -72,6 +75,7 @@ export const rpcRouter = createRPCRouter({
   skills: skillsController,
   ssh: sshController,
   projects: projectController,
+  repoGroups: repoGroupController,
   tasks: taskController,
   conversations: conversationController,
   terminals: terminalsController,

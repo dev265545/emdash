@@ -1,6 +1,7 @@
 import { CheckCircle, Loader2, Sparkles } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import { useState } from 'react';
+import { githubPanelStore } from '@renderer/features/github-panel/stores/github-panel-store';
 import { useAppSettingsKey } from '@renderer/features/settings/use-app-settings-key';
 import { getTaskGitStore } from '@renderer/features/tasks/stores/task-selectors';
 import {
@@ -157,7 +158,7 @@ export const CommitCard = observer(function CommitCard({ autoStage = false }: Co
       branchName: branchName ?? '',
       draft: false,
       workspaceId,
-      onSuccess: () => {},
+      onSuccess: () => githubPanelStore.myPrs.invalidate(),
     });
   };
 

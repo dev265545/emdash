@@ -20,6 +20,7 @@ import { gitWatcherRegistry } from './core/git/git-watcher-registry';
 import { githubAccountReconciliationService } from './core/github/accounts/github-account-reconciliation-instance';
 import { githubAccountRegistry } from './core/github/accounts/github-account-registry-instance';
 import { GitHubAuthServerAdapter } from './core/github/accounts/github-auth-server-adapter';
+import { lanServerService } from './core/lan-server/lan-server-service';
 import { projectManager } from './core/projects/project-manager';
 import { projectSettingsService } from './core/projects/settings/project-settings-service';
 import { promptLibraryService } from './core/prompt-library/service';
@@ -136,6 +137,10 @@ void app.whenReady().then(async () => {
   await appSettingsService.initialize();
   await promptLibraryService.initialize();
 
+  lanServerService.initialize().catch((e: unknown) => {
+    log.error('Failed to initialize LAN server service:', e);
+  });
+
   agentHookService.initialize().catch((e) => {
     log.error('Failed to start agent event service:', e);
   });
@@ -188,6 +193,7 @@ app.on('before-quit', (event) => {
     stopResourceSampler();
     updateService.dispose();
     prSyncScheduler.dispose();
+    lanServerService.dispose();
     void gitWatcherRegistry.dispose();
     void projectManager.dispose().catch((e) => {
       log.error('Failed to shutdown project manager:', e);

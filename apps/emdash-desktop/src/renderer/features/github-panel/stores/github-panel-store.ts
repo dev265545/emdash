@@ -1,4 +1,4 @@
-import { makeAutoObservable, reaction } from 'mobx';
+import { makeAutoObservable, reaction, runInAction } from 'mobx';
 import { rpc } from '@renderer/lib/ipc';
 import { Resource } from '@renderer/lib/stores/resource';
 import type { PanelIssue, PanelPr } from '@shared/github-panel';
@@ -14,6 +14,7 @@ export class GithubPanelStore {
   activeTab: GithubPanelTab = 'my-prs';
   selection: GithubPanelSelection = null;
   accountId: string | undefined = undefined;
+  currentUserLogin: string | null = null;
 
   readonly myPrs: Resource<PanelPr[]>;
   readonly reviewRequests: Resource<PanelPr[]>;
@@ -128,10 +129,21 @@ export class GithubPanelStore {
     this._onNewReviewRequests = handler;
   }
 
+  async loadCurrentUser() {
+    const result = await rpc.githubPanel.getCurrentUserLogin({ accountId: this.accountId });
+    if (result.success) {
+      runInAction(() => {
+        this.currentUserLogin = result.login;
+      });
+    }
+  }
+
   reload() {
     this.myPrs.invalidate();
     this.reviewRequests.invalidate();
     this.assignedIssues.invalidate();
+    this.currentUserLogin = null;
+    void this.loadCurrentUser();
   }
 
   dispose() {

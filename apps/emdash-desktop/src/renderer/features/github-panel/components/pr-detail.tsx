@@ -27,6 +27,7 @@ import { Separator } from '@renderer/lib/ui/separator';
 import { Spinner } from '@renderer/lib/ui/spinner';
 import { cn } from '@renderer/utils/utils';
 import type { PanelCiStatus, PanelPrDetail } from '@shared/github-panel';
+import { githubPanelStore } from '../stores/github-panel-store';
 import type { PrDetailStore } from '../stores/pr-detail-store';
 import { CommentComposer } from './comment-composer';
 import { CommentThread } from './comment-thread';
@@ -191,10 +192,15 @@ export const PrDetail = observer(function PrDetail({ store }: { store: PrDetailS
   const [showFiles, setShowFiles] = useState(false);
   const [showReviewComposer, setShowReviewComposer] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
+  const [confirmMerge, setConfirmMerge] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const pr = store.detail.data;
   const isLoading = store.detail.loading && !pr;
+  const isOwnPr =
+    pr != null && githubPanelStore.currentUserLogin != null
+      ? pr.author === githubPanelStore.currentUserLogin
+      : false;
 
   useEffect(() => {
     if (pr) {
@@ -235,6 +241,42 @@ export const PrDetail = observer(function PrDetail({ store }: { store: PrDetailS
             <div className="flex shrink-0 items-center gap-2">
               {pr.state === 'open' && (
                 <>
+                  {confirmMerge ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] text-foreground-passive">Merge PR?</span>
+                      <Button
+                        size="sm"
+                        className="h-6 px-2 text-[11px]"
+                        disabled={store.isMergingPr || pr.mergeable === 'conflicting'}
+                        onClick={async () => {
+                          await store.mergePr();
+                          setConfirmMerge(false);
+                        }}
+                      >
+                        {store.isMergingPr ? (
+                          <Loader2 className="size-3 animate-spin" />
+                        ) : (
+                          'Confirm'
+                        )}
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmMerge(false)}
+                        className="text-foreground-passive hover:text-foreground"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmMerge(true)}
+                      disabled={pr.mergeable === 'conflicting'}
+                      className="text-[11px] text-foreground-passive hover:text-foreground-success disabled:opacity-40"
+                    >
+                      Merge PR
+                    </button>
+                  )}
                   {confirmClose ? (
                     <div className="flex items-center gap-1.5">
                       <span className="text-[11px] text-foreground-passive">Close PR?</span>
@@ -284,6 +326,9 @@ export const PrDetail = observer(function PrDetail({ store }: { store: PrDetailS
           </div>
           {store.closeError && (
             <p className="text-[11px] text-foreground-error">{store.closeError}</p>
+          )}
+          {store.mergeError && (
+            <p className="text-[11px] text-foreground-error">{store.mergeError}</p>
           )}
           <div className="flex flex-wrap items-center gap-2">
             <PrStateBadge pr={pr} />
@@ -372,7 +417,7 @@ export const PrDetail = observer(function PrDetail({ store }: { store: PrDetailS
           </button>
           {showReviewComposer && (
             <div className="mt-3">
-              <ReviewComposer store={store} />
+              <ReviewComposer store={store} isOwnPr={isOwnPr} />
             </div>
           )}
         </div>

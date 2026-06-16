@@ -128,6 +128,8 @@ export type ResolvedDiffTab = {
   status?: GitChangeStatus;
   isPreview: boolean;
   isActive: boolean;
+  sourceProjectId?: string;
+  sourceTaskId?: string;
 };
 
 export type ResolvedTab =
@@ -396,6 +398,8 @@ export class TabManagerStore implements Snapshottable<TabManagerSnapshot> {
           status: entry.status,
           isPreview: entry.isPreview,
           isActive: effectiveActiveId === entry.tabId,
+          sourceProjectId: entry.sourceProjectId,
+          sourceTaskId: entry.sourceTaskId,
         });
       } else {
         const bufferUri = entry.isExternal
@@ -453,6 +457,8 @@ export class TabManagerStore implements Snapshottable<TabManagerSnapshot> {
           commitModifiedSha: entry.commitModifiedSha,
           status: entry.status,
           isPreview: entry.isPreview,
+          sourceProjectId: entry.sourceProjectId,
+          sourceTaskId: entry.sourceTaskId,
         });
       } else {
         tabs.push({
@@ -798,6 +804,8 @@ export class TabManagerStore implements Snapshottable<TabManagerSnapshot> {
               prHeadOid: t.prHeadOid,
               commitOriginalSha: t.commitOriginalSha,
               commitModifiedSha: t.commitModifiedSha,
+              sourceProjectId: t.sourceProjectId,
+              sourceTaskId: t.sourceTaskId,
             },
             t.isPreview,
             t.tabId,
@@ -889,7 +897,9 @@ export class TabManagerStore implements Snapshottable<TabManagerSnapshot> {
       if (
         entry?.kind !== 'diff' ||
         entry.path !== activeFile.path ||
-        entry.diffGroup !== activeFile.group
+        entry.diffGroup !== activeFile.group ||
+        entry.sourceProjectId !== activeFile.sourceProjectId ||
+        entry.sourceTaskId !== activeFile.sourceTaskId
       ) {
         continue;
       }

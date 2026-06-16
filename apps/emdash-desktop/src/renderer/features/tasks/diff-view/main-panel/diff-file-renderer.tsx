@@ -274,5 +274,7 @@ function tabToActiveFile(tab: DiffTabStore): ActiveFile {
     prHeadOid: tab.prHeadOid,
     commitOriginalSha: tab.commitOriginalSha,
     commitModifiedSha: tab.commitModifiedSha,
+    sourceProjectId: tab.sourceProjectId,
+    sourceTaskId: tab.sourceTaskId,
   };
 }

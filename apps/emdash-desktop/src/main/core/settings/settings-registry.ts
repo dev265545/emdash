@@ -77,6 +77,13 @@ export const SETTINGS_DEFAULTS = {
     commitModel: 'auto',
     prModel: 'auto',
   },
+  lanServer: {
+    enabled: false,
+    port: 7788,
+    pin: '',
+    writeMode: false,
+    autoStartOnLaunch: false,
+  },
 } satisfies SettingsDefaultsMap;
 
 export function getDefaultForKey<K extends AppSettingsKey>(key: K): AppSettings[K] {

@@ -155,6 +155,10 @@ export type GithubPanelGetCiStatusResult =
   | { success: true; result: PanelCiResult }
   | { success: false; error: string };
 export type GithubPanelClosePrResult = { success: true } | { success: false; error: string };
+export type GithubPanelMergePrResult = { success: true } | { success: false; error: string };
+export type GithubPanelGetCurrentUserResult =
+  | { success: true; login: string }
+  | { success: false; error: string };
 export type GithubPanelGetPrFilesResult =
   | { success: true; files: PanelPrFile[] }
   | { success: false; error: string };

@@ -21,12 +21,14 @@ export const viewEvents: Record<
   | 'mcp_viewed'
   | 'automations_viewed'
   | 'github_panel_viewed'
+  | 'repo_group_viewed'
 > = {
   home: 'home_viewed',
   automations: 'automations_viewed',
   githubPanel: 'github_panel_viewed',
   library: 'library_viewed',
   project: 'project_viewed',
+  repoGroup: 'repo_group_viewed',
   task: 'task_viewed',
   settings: 'settings_viewed',
   skills: 'skills_viewed',

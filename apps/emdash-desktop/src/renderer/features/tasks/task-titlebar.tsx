@@ -17,6 +17,10 @@ import {
   projectDisplayName,
 } from '@renderer/features/projects/stores/project-selectors';
 import {
+  getGroupContextForAgentTask,
+  getRepoGroupStore,
+} from '@renderer/features/repo-groups/stores/repo-group-selectors';
+import {
   getRegisteredTaskData,
   getTaskStore,
   taskDisplayName,
@@ -70,9 +74,18 @@ const PendingTaskTitlebar = observer(function PendingTaskTitlebar({
   projectId: string;
 }) {
   const taskStore = getTaskStore(projectId, taskId);
-  const projectName = projectDisplayName(getProjectStore(projectId));
   const name = taskDisplayName(taskStore);
   const { navigate } = useNavigate();
+
+  const groupContext = getGroupContextForAgentTask(taskId);
+  const groupName = groupContext
+    ? getRepoGroupStore(groupContext.repoGroupId)?.data.name
+    : undefined;
+  const crumbLabel = groupName ?? projectDisplayName(getProjectStore(projectId));
+  const onCrumbClick = () =>
+    groupContext
+      ? navigate('repoGroup', { repoGroupId: groupContext.repoGroupId })
+      : navigate('project', { projectId });
 
   return (
     <Titlebar
@@ -82,9 +95,9 @@ const PendingTaskTitlebar = observer(function PendingTaskTitlebar({
             <button
               type="button"
               className="text-sm text-foreground-passive hover:text-foreground"
-              onClick={() => navigate('project', { projectId })}
+              onClick={onCrumbClick}
             >
-              {projectName}
+              {crumbLabel}
             </button>
             <span className="text-sm text-foreground-passive">/</span>
             {name}
@@ -127,8 +140,17 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
 
   const projectStore = asMounted(getProjectStore(projectId));
 
-  const projectName = projectDisplayName(getProjectStore(projectId));
   const { navigate } = useNavigate();
+
+  const groupContext = getGroupContextForAgentTask(taskId);
+  const groupName = groupContext
+    ? getRepoGroupStore(groupContext.repoGroupId)?.data.name
+    : undefined;
+  const crumbLabel = groupName ?? projectDisplayName(getProjectStore(projectId));
+  const onCrumbClick = () =>
+    groupContext
+      ? navigate('repoGroup', { repoGroupId: groupContext.repoGroupId })
+      : navigate('project', { projectId });
 
   if (!taskStore || !taskPayload) return null;
 
@@ -140,9 +162,9 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
           <button
             type="button"
             className="text-sm text-foreground-passive hover:text-foreground"
-            onClick={() => navigate('project', { projectId })}
+            onClick={onCrumbClick}
           >
-            {projectName}
+            {crumbLabel}
           </button>
           <span className="text-sm text-foreground-passive">/</span>
           <Popover>

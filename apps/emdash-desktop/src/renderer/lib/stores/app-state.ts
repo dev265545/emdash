@@ -1,4 +1,5 @@
 import { ProjectManagerStore } from '@renderer/features/projects/stores/project-manager';
+import { RepoGroupManagerStore } from '@renderer/features/repo-groups/stores/repo-group-manager';
 import { SidebarStore } from '@renderer/features/sidebar/sidebar-store';
 import { DependenciesStore } from './dependencies-store';
 import { NavigationHistoryStore } from './navigation-history-store';
@@ -11,6 +12,7 @@ import { UpdateStore } from './update-store';
 class AppState {
   readonly update: UpdateStore;
   readonly projects: ProjectManagerStore;
+  readonly repoGroups: RepoGroupManagerStore;
   readonly sidebar: SidebarStore;
   readonly snapshots: SnapshotRegistry;
   readonly history: NavigationHistoryStore;
@@ -23,7 +25,8 @@ class AppState {
     this.snapshots = snapshotRegistry;
     this.update = new UpdateStore();
     this.projects = new ProjectManagerStore();
-    this.sidebar = new SidebarStore(this.projects);
+    this.repoGroups = new RepoGroupManagerStore(this.projects);
+    this.sidebar = new SidebarStore(this.projects, this.repoGroups);
     this.history = new NavigationHistoryStore();
     this.navigation = new NavigationStore();
     this.dependencies = new DependenciesStore();

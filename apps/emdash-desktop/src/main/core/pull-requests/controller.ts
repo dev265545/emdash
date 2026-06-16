@@ -153,11 +153,6 @@ export const pullRequestController = createRPCController({
 
   getPullRequestsForTask: async (projectId: string, taskId: string) => {
     try {
-      const capability = await providerRepositoryService.resolveProject(projectId);
-      if (!capability.success) {
-        return ok({ prs: [], branchName: null });
-      }
-
       const [taskRow] = await db
         .select({ workspaceId: tasks.workspaceId })
         .from(tasks)
@@ -178,9 +173,29 @@ export const pullRequestController = createRPCController({
         return ok({ prs: [], branchName: null });
       }
 
+      // Query across all tracked remotes for the project so multi-repo workspaces
+      // find PRs even when the branch lives in a non-primary repo.
+      const { projectRemotes } = await import('@main/db/schema');
+      const remoteRows = await db
+        .select({ remoteUrl: projectRemotes.remoteUrl })
+        .from(projectRemotes)
+        .where(eq(projectRemotes.projectId, projectId));
+
+      let repositoryUrls: string[];
+      if (remoteRows.length > 0) {
+        repositoryUrls = remoteRows.map((r) => r.remoteUrl);
+      } else {
+        // Fall back to the primary remote if no remotes cached yet.
+        const capability = await providerRepositoryService.resolveProject(projectId);
+        if (!capability.success) {
+          return ok({ prs: [], branchName: wsRow.branchName });
+        }
+        repositoryUrls = [capability.data.repositoryUrl];
+      }
+
       const prs = await prQueryService.getTaskPullRequests(
         wsRow.branchName,
-        capability.data.repositoryUrl
+        repositoryUrls
       );
       return ok({ prs, branchName: wsRow.branchName });
     } catch (error) {

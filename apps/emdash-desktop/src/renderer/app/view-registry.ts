@@ -5,6 +5,7 @@ import { githubPanelView } from '@renderer/features/github-panel/view';
 import { libraryView } from '@renderer/features/library/library-view';
 import { mcpView } from '@renderer/features/mcp/mcp-view';
 import { projectView } from '@renderer/features/projects/view';
+import { repoGroupView } from '@renderer/features/repo-groups/view';
 import { settingsView } from '@renderer/features/settings/settings-view';
 import { skillsView } from '@renderer/features/skills/skills-view';
 import { taskView } from '@renderer/features/tasks/view';
@@ -20,6 +21,7 @@ export const views = {
   skills: skillsView,
   mcp: mcpView,
   project: projectView,
+  repoGroup: repoGroupView,
   task: taskView,
   settings: settingsView,
   // oxlint-disable-next-line typescript/no-explicit-any
